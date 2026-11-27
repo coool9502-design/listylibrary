@@ -59,9 +59,9 @@ h2{font-size:32px;line-height:1.15;margin:22px 0 14px}
 .cb.on svg{fill:#ff5a76;stroke:#ff5a76}
 .hr{display:grid;grid-template-columns:136px 1fr;gap:18px;margin-top:20px}
 .vp{position:relative;width:136px;height:204px;box-shadow:0 10px 26px rgba(0,0,0,.55);border-radius:14px}.vp .po{width:100%;height:100%;aspect-ratio:auto;border-radius:14px;border:1px solid rgba(255,255,255,.14);padding:0;font-size:0}
-.rb{position:absolute;top:8px;left:8px;background:rgba(11,11,12,.6);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--gd);border-radius:12px;padding:5px 9px;color:#F4F1EA;text-decoration:none;display:block}
-.rr{display:flex;align-items:center;gap:5px}.rr b{font:700 18px/1.1 Inter,Roboto,system-ui,sans-serif;font-variant-numeric:lining-nums tabular-nums;letter-spacing:0}
-.stx{width:13px;height:13px}.rb small{display:block;font-size:10.5px;color:#D6D3CB;white-space:nowrap}
+.rb{position:absolute;right:9px;bottom:8px;left:auto;top:auto;background:none;border:0;border-radius:0;padding:0;text-align:right;color:#F4F1EA;text-decoration:none;display:block;text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.8)}
+.rr{display:flex;align-items:center;justify-content:flex-end;gap:4px}.rr b{font:700 18px/1.1 Inter,Roboto,system-ui,sans-serif;font-variant-numeric:lining-nums tabular-nums;letter-spacing:0}
+.stx{width:13px;height:13px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.9))}.rb small{display:block;font-size:10.5px;color:#EDEAE2;white-space:nowrap}
 .hi{min-width:0}.hi i{font-style:normal;color:var(--gd);font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
 .hi h2{margin:6px 0 4px;font:700 30px/1.08 'Playfair Display',Georgia,serif;word-break:break-word}
 .mt{color:var(--mu2);font-size:14px}
@@ -71,7 +71,7 @@ h2{font-size:32px;line-height:1.15;margin:22px 0 14px}
 .ws{display:flex;align-items:center;justify-content:space-between;border-block:1px solid var(--hl);padding:12px 0;min-height:68px}
 .ws small{display:block;color:var(--mu2);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}.ws b{display:block;font-size:18px;margin:3px 0}.ws b .gd{color:var(--gd);padding:0 3px}.ws em{font-style:normal;color:var(--mu2);font-size:13px}
 .ws .wg{color:var(--gr);font-size:16px}.ws .mu{color:var(--mu2)}
-.tkb{width:44px;height:44px;display:grid;place-items:center;flex:none}.tk{width:36px;height:36px;display:block;background:#fff;border-radius:50%;color-scheme:only light;forced-color-adjust:none}
+.tkb{width:44px;height:44px;display:grid;place-items:center;flex:none;color:inherit;text-decoration:none}.tk path,.tk circle{stroke:none;stroke-width:0}.tk{width:36px;height:36px;display:block;background:#fff;border-radius:50%;color-scheme:only light;forced-color-adjust:none}
 .dv h3{color:var(--gd);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:0 0 10px}
 .sc2,.dv .sec{margin-top:14px}.dv .sec h3{font-size:10.5px;margin:0 0 4px}
 .sy{margin:0;font-size:16px;line-height:1.75;text-align:justify;color:#D6D3CB}
@@ -126,7 +126,7 @@ function listing(title,ids,back,searchable,kindFor){
  const o=$('#o');if(o)o.onchange=()=>{srt=o.value;route(true)};}
 const pgHtml=t=>{const p=t.pg;if(!p)return'';const sv=String(p.sev||''),c=/sever/i.test(sv)?'#ff453a':/moder/i.test(sv)?'#ff9f0a':/mild/i.test(sv)?'#ffd60a':/none/i.test(sv)?'#30d158':'#6b6b70',it=p.items||[],ns=it.filter(i=>!i[1]),sp=it.filter(i=>i[1]);
 return `<div class="sec"><h3>Parental guide</h3><button class="pgh" id="pgt"><span class="dot" style="background:${c}"></span>${esc(sv||'Not listed')}${p.votes?`<small>${esc(p.votes)} votes</small>`:''}<span class="c" id="pgc">▸</span></button><div id="pgb" hidden><ol>${ns.map(i=>`<li>${esc(i[0])}</li>`).join('')||'<li>No written entries.</li>'}</ol>${sp.length?`<button class="chip" id="pgs">Show spoilers (${sp.length})</button><ol class="spo" id="pgsp" hidden>${sp.map(i=>`<li>${esc(i[0])}</li>`).join('')}</ol>`:''}</div></div>`};
-const FV=()=>LS('fav')||{},nf=n=>Number(n).toLocaleString('en-US'),p2=n=>String(n).padStart(2,'0');
+const FV=()=>LS('fav')||{},nf=n=>Number(n).toLocaleString('en-US'),nv=n=>{n=Number(n)||0;const f=(x,u)=>String(+x.toFixed(1))+u;return n>=1e6?f(n/1e6,'M'):n>=1e5?Math.round(n/1e3)+'k':n>=1e3?f(n/1e3,'k'):String(n)},p2=n=>String(n).padStart(2,'0');
 const SL={ended:'Ended',ongoing:'Ongoing',canceled:'Canceled',upcoming:'Upcoming'};
 const TKF='<svg viewBox="0 0 24 24" class="tk" aria-hidden="true"><circle cx="12" cy="12" r="11.9" fill="#fff"/><path fill="#DE2318" d="M19.178 18.464a9.654 9.654 0 0 0 2.484-6.466c0-3.885-2.287-7.215-5.568-8.76l-6.089 6.076 9.173 9.15zm-6.83-7.393v-.008l-.678-.676 4.788-4.79.679.689-4.789 4.785zm3.863-7.265.677.682-5.517 5.517-.68-.679 5.52-5.52zM4.89 18.531A9.601 9.601 0 0 0 12 21.644a9.618 9.618 0 0 0 4.027-.876l-6.697-6.68-4.44 4.443z"></path><path fill="#DE2318" d="M12 24c6.615 0 12-5.385 12-12S18.615 0 12 0 0 5.385 0 12s5.385 12 12 12zm0-22.789c5.95 0 10.79 4.839 10.79 10.789S17.95 22.79 12 22.79 1.211 17.95 1.211 12 6.05 1.211 12 1.211z"></path><path fill="#DE2318" d="m4.276 17.801 5.056-5.055.359.329 7.245 7.245a3.31 3.31 0 0 0 .42-.266L9.33 12.05l-4.854 4.855-.679-.679 5.535-5.535.359.331 8.46 8.437c.135-.1.255-.215.375-.316L9.39 10.027l-.083.015-.006-.007-5.074 5.055-.679-.68L15.115 2.849A9.756 9.756 0 0 0 12 2.34C6.663 2.337 2.337 6.663 2.337 12c0 2.172.713 4.178 1.939 5.801z"></path></svg>';
 const tkb=t=>{const im=TKF;return t.imdb?`<a class="tkb" href="https://trakt.tv/search/imdb/${esc(t.imdb)}" target="_blank" rel="noopener" aria-label="Open on Trakt">${im}</a>`:`<span class="tkb" role="img" aria-label="Watched on Trakt">${im}</span>`};
@@ -138,7 +138,7 @@ function detail(id){const t=D.titles[id];if(!t)return location.hash='#/';
  const meta=[t.year||'',tv?'':rt,st].filter(Boolean).join(' · ');
  const bd=[[t.cert,'o'],[t.lang,''],[t.net,'']].filter(b=>b[0]).map(b=>`<span class="${b[1]}">${esc(b[0])}</span>`).join('');
  const chips=(t.gl&&t.gl.length?t.gl:(X.Genre||'').split(',').map(g=>g.trim()).filter(Boolean).slice(0,3)).map(g=>`<span>${esc(g)}</span>`).join('');
- const r=Number(t.rating)||0,rb=r?`<${t.imdb?`a href="https://www.imdb.com/title/${esc(t.imdb)}/" target="_blank" rel="noopener"`:'div'} class="rb"><div class="rr">${STI}<b>${r.toFixed(1)}</b></div>${t.votes?`<small>${nf(t.votes)} votes</small>`:''}</${t.imdb?'a':'div'}>`:'';
+ const r=Number(t.rating)||0,rb=r?`<${t.imdb?`a href="https://www.imdb.com/title/${esc(t.imdb)}/" target="_blank" rel="noopener"`:'div'} class="rb"><div class="rr">${STI}<b>${r.toFixed(1)}</b></div>${t.votes?`<small>${nv(t.votes)} votes</small>`:''}</${t.imdb?'a':'div'}>`:'';
  const tkOn=t.tk!==undefined?!!t.tk:!!t.watched,wl=t.watched?'Watched'+(t.wat?' '+ago(t.wat):''):'';
  const cnt=[tv&&t.sn?t.sn+(t.sn===1?' season':' seasons'):'',tv&&(t.ep||X.Episodes)?(t.ep||X.Episodes)+' episodes':''].filter(Boolean).join(' · ');
  let ws;
