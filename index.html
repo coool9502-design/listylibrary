@@ -174,9 +174,12 @@ function detail(id){const t=D.titles[id];if(!t)return location.hash='#/';
  const pt=$('#pgt');if(pt)pt.onclick=()=>{const b=$('#pgb');b.hidden=!b.hidden;$('#pgc').textContent=b.hidden?'▸':'▾'};const ps=$('#pgs');if(ps)ps.onclick=()=>{const o=$('#pgsp');o.hidden=!o.hidden;ps.textContent=(o.hidden?'Show':'Hide')+' spoilers'};
  const ml=$('#ml');if(ml)ml.onclick=()=>openLists(id);
  const m=$('#m');if(m){let open=0;m.onclick=()=>{open=!open;$('#syt').textContent=open?ov.slice(1):short;m.textContent=open?'Less':'More'}}}
-function settings(){const s=LS('cfg')||{};app.innerHTML=`<header><button class="ib" id="b">${ic('back')}</button><h1>Settings</h1></header><main><div class="f"><label>Snapshot file (leave empty to use snapshot.enc in this repo)</label><input id="u" value="${esc(s.url||'')}" placeholder="snapshot.enc"><label>Passphrase (the one set in the laptop script)</label><input id="pw" type="password" value="${esc(s.pw||'')}"><label>GitHub repo for phone edits (owner/name)</label><input id="rp" value="${esc(s.repo||'')}" placeholder="${esc(repoOf({})||'owner/repo')}"><label>GitHub token (this repo only, Contents: read and write)</label><input id="tk" type="password" value="${esc(s.tok||'')}"><button class="btn" id="sv">Save and sync</button><button class="btn g" id="dm">Use demo data</button><div class="msg" id="st">${demo?'Demo data':'Last synced '+esc(ago(D.updated))}</div><div class="msg">${esc(pendMsg())}</div></div></main>`;
+function settings(){const s=LS('cfg')||{};app.innerHTML=`<header><button class="ib" id="b">${ic('back')}</button><h1>Settings</h1></header><main><div class="f"><label>Snapshot file (leave empty to use snapshot.enc in this repo)</label><input id="u" value="${esc(s.url||'')}" placeholder="snapshot.enc"><label>Passphrase (the one set in the laptop script)</label><input id="pw" type="password" value="${esc(s.pw||'')}"><label>GitHub repo for phone edits (owner/name)</label><input id="rp" value="${esc(s.repo||'')}" placeholder="${esc(repoOf({})||'owner/repo')}"><label>GitHub token (this repo only, Contents: read and write)</label><input id="tk" type="password" value="${esc(s.tok||'')}"><label>Trakt client id (optional, for direct Trakt access)</label><input id="tci" value="${esc(s.tci||'')}" autocomplete="off" autocapitalize="none"><label>Trakt client secret</label><input id="tcs" type="password" value="${esc(s.tcs||'')}" autocomplete="off"><button class="btn alt" id="tc">${trkOK()?'Disconnect Trakt':'Connect Trakt'}</button><button class="btn g" id="tr" ${trkOK()?'':'disabled'}>Refresh from Trakt</button><div class="msg" id="tm">${esc(trkMsg())}</div><button class="btn" id="sv">Save and sync</button><button class="btn g" id="dm">Use demo data</button><div class="msg" id="st">${demo?'Demo data':'Last synced '+esc(ago(D.updated))}</div><div class="msg">${esc(pendMsg())}</div></div></main>`;
  $('#b').onclick=()=>history.length>1?history.back():location.hash='#/';
- $('#sv').onclick=async()=>{LS('cfg',Object.assign(LS('cfg')||{},{url:$('#u').value.trim(),pw:$('#pw').value,repo:$('#rp').value.trim(),tok:$('#tk').value.trim()}));$('#st').textContent='Syncing…';const r=await sync();$('#st').textContent=r===true?'Synced':r;flush(true)};
+ $('#sv').onclick=async()=>{LS('cfg',Object.assign(LS('cfg')||{},{url:$('#u').value.trim(),pw:$('#pw').value,repo:$('#rp').value.trim(),tok:$('#tk').value.trim(),tci:$('#tci').value.trim(),tcs:$('#tcs').value.trim()}));$('#st').textContent='Syncing…';const r=await sync();$('#st').textContent=r===true?'Synced':r;flush(true)};
+ const tsv=()=>LS('cfg',Object.assign(LS('cfg')||{},{tci:$('#tci').value.trim(),tcs:$('#tcs').value.trim()}));
+ $('#tc').onclick=()=>{if(trkOK()){localStorage.removeItem('trk');localStorage.removeItem('tov');localStorage.removeItem('tlast');if(S)D=mk(S);settings();return}tsv();trkConnect(()=>settings())};
+ $('#tr').onclick=async()=>{tsv();$('#tm').textContent='Refreshing…';await trkRefresh(false);$('#tm').textContent=trkMsg()};
  $('#dm').onclick=()=>{localStorage.removeItem('snap');S=null;D=DEMO;demo=true;$('#st').textContent='Demo data'}}
 function route(keep){const h=decodeURIComponent(location.hash.slice(1))||'/',p=h.split('/');window.scrollTo(0,keep?scrollY:0);CL=null;if(!keep)edm=false;
  if(!keep&&p[1]!=='list'&&p[1]!=='search'){q='';showQ=false}
@@ -203,7 +206,9 @@ function applyOp(d,op){
  const ls=(on)=>{const t=d.titles[k];if(!t||!Array.isArray(t.ls))return;t.ls=t.ls.filter(n=>n!==l.name);if(on)t.ls.push(l.name);t.extra=(t.extra||[]).filter(e=>!(e&&e[0]==='In lists'))};
  if(op.o==='add'){if(!l.items.includes(k))l.items.push(k);if(!d.titles[k]&&op.item){const it=op.item;d.titles[k]={title:it.title,year:+it.year||0,rating:+it.rating||0,kind:/^tv:/.test(k)?'tv':'movie',overview:it.overview||'',poster:it.cover||'',director:'',gl:String(it.genre||'').split(', ').filter(Boolean).slice(0,3),ls:[]}}ls(true)}
  else if(op.o==='del'){l.items=l.items.filter(x=>x!==k);ls(false)}}
-function mk(s){const d=JSON.parse(JSON.stringify(s));(LS('ops')||[]).forEach(o=>applyOp(d,o));return d}
+function ovApply(t,e){t.tk=e.tk||'';t.watched=!!e.watched;t.wat=e.wat||0;if(e.wu)t.wu=e.wu;else delete t.wu;if(e.dr)t.dr=1;else delete t.dr}
+function mk(s){const d=JSON.parse(JSON.stringify(s)),ov=LS('tov'),su=s.updated||0;if(ov&&ov.m)for(const k in ov.m){const t=d.titles[k],e=ov.m[k];if(t&&e&&e.ts>su)ovApply(t,e)}(LS('ops')||[]).forEach(o=>applyOp(d,o));return d}
+const trkMsg=()=>trkOK()?'Connected to Trakt. '+(LS('tlast')?'Last refresh '+ago(LS('tlast'))+'.':'Not refreshed yet.'):'Not connected. Marking watched goes through the laptop.';
 const pendMsg=()=>{const P=LS('ops')||[],u=P.filter(o=>!o.up).length;return P.length?`${P.length} phone edit${P.length>1?'s':''} waiting for the laptop's next Resync`+(u?` (${u} not uploaded yet)`:''):'No phone edits waiting.'};
 let tt=0;function toast(m,undo){let e=$('#ts');if(!e){e=document.createElement('div');e.id='ts';e.className='ts';document.body.appendChild(e)}e.innerHTML=`<span>${esc(m)}</span>${undo?'<button>Undo</button>':''}`;e.classList.add('on');if(undo)e.querySelector('button').onclick=()=>{e.classList.remove('on');undo()};clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('on'),undo?6000:4000)}
 const b64=u=>{let s='';for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(s)};
@@ -241,11 +246,49 @@ const nameTaken=(n,id)=>(D.lists||[]).some(l=>l.id!==id&&l.name.toLowerCase()===
 function doList(o,x){if(!ghOK()){toast('Add the GitHub repo and token in Settings first.');return false}
  const op=Object.assign({id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),o,t:Date.now()},x);
  applyOp(D,op);const P=LS('ops')||[];P.push(op);LS('ops',P);flush(true);return true}
-function doTrakt(id,t,x){if(!ghOK()){toast('Add the GitHub repo and token in Settings first.');return false}
+// ---- direct Trakt access (client id + secret from your Trakt app; device login; tokens stay on this phone) ----
+const TKU='https://api.trakt.tv',TRU='urn:ietf:wg:oauth:2.0:oob',TE=(m,c)=>{const e=new Error(m);e.code=c;return e};
+const trkCfg=()=>{const c=LS('cfg')||{};return{id:(c.tci||'').trim(),sec:(c.tcs||'').trim()}};
+const trkOK=()=>{const k=trkCfg(),t=LS('trk');return !!(k.id&&k.sec&&t&&t.r)};
+const trkNet=e=>e instanceof TypeError?'Could not reach Trakt from the browser (offline, or Trakt blocks web-page requests).':(e&&e.message)||'Trakt failed.';
+const trkSave=j=>LS('trk',{a:j.access_token,r:j.refresh_token,exp:((j.created_at||Math.floor(Date.now()/1e3))+(j.expires_in||7776000))*1000});
+async function trkAuth(force){const t=LS('trk');if(!t)throw TE('Connect Trakt in Settings first.');if(!force&&t.exp-Date.now()>36e5)return t.a;const k=trkCfg(),r=await fetch(TKU+'/oauth/token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({refresh_token:t.r,client_id:k.id,client_secret:k.sec,redirect_uri:TRU,grant_type:'refresh_token'})});if(!r.ok)throw TE('Trakt sign-in expired. Connect again in Settings.',r.status);const j=await r.json();trkSave(j);return j.access_token}
+async function trkReq(path,o){o=o||{};const k=trkCfg();let tok=await trkAuth(),go=()=>fetch(TKU+path,{method:o.m||'GET',headers:{'Content-Type':'application/json','trakt-api-version':'2','trakt-api-key':k.id,Authorization:'Bearer '+tok},body:o.b?JSON.stringify(o.b):undefined});let r=await go();if(r.status===401){tok=await trkAuth(true);r=await go()}if(!r.ok)throw TE(r.status===429?'Trakt is rate limiting. Try again in a minute.':'Trakt returned HTTP '+r.status+'.',r.status);return r}
+async function trkPaged(path,lim){let all=[],p=1;for(;;){const r=await trkReq(path+(path.includes('?')?'&':'?')+'page='+p+'&limit='+lim),j=await r.json();all=all.concat(j);const pc=+r.headers.get('X-Pagination-Page-Count');if(pc?p>=pc:j.length<lim)break;if(++p>40)break}return all}
+async function trkConnect(done){const k=trkCfg();if(!k.id||!k.sec){toast('Enter the Trakt client id and secret first.');return}
+ const ov=document.createElement('div');ov.className='sh';document.body.appendChild(ov);let dead=0;const close=()=>{dead=1;ov.remove()};
+ try{const r=await fetch(TKU+'/oauth/device/code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:k.id})});if(!r.ok)throw TE('Trakt rejected the client id.');const d=await r.json();
+  ov.innerHTML=`<div class="sb"></div><div class="sp"><h4>Connect Trakt</h4><div class="mu">Open trakt.tv/activate and enter this code:</div><div style="font-size:32px;letter-spacing:.2em;font-weight:600;margin:14px 0;text-align:center">${esc(d.user_code)}</div><a class="btn" href="${esc(d.verification_url||'https://trakt.tv/activate')}" target="_blank" rel="noopener">Open Trakt</a><div class="msg">Waiting for approval…</div></div>`;ov.querySelector('.sb').onclick=close;
+  let iv=(d.interval||5)*1000;const end=Date.now()+(d.expires_in||600)*1000;
+  while(!dead&&Date.now()<end){await new Promise(z=>setTimeout(z,iv));if(dead)return;const q=await fetch(TKU+'/oauth/device/token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:d.device_code,client_id:k.id,client_secret:k.sec})});
+   if(q.status===200){trkSave(await q.json());close();toast('Trakt connected.');if(done)done();return}
+   if(q.status===429)iv+=5000;else if(q.status!==400)throw TE(q.status===418?'Denied on Trakt.':q.status===410?'The code expired. Try again.':'Trakt sign-in failed (HTTP '+q.status+').')}
+  if(!dead)throw TE('The code expired. Try again.')}catch(e){close();toast(trkNet(e))}}
+let trkBusy=0,trkT=0;
+async function trkRefresh(silent){if(trkBusy||!trkOK()||!S)return false;trkBusy=1;try{
+  const mv=await trkPaged('/sync/watched/movies',250),sh=await trkPaged('/sync/watched/shows',100);let dr=[];try{dr=await trkPaged('/users/hidden/dropped?type=show',100)}catch(e){if(e.code===401||e.code===403)throw e}
+  const M={},H={},R=new Set();mv.forEach(x=>{const i=x.movie&&x.movie.ids&&x.movie.ids.imdb;if(i)M[i]=Date.parse(x.last_watched_at)||Date.now()});
+  sh.forEach(x=>{const i=x.show&&x.show.ids&&x.show.ids.imdb;if(!i)return;let c=0,w=null;(x.seasons||[]).forEach(se=>{if(!se.number)return;(se.episodes||[]).forEach(ep=>{c++;if(!w||se.number>w[0]||(se.number===w[0]&&ep.number>w[1]))w=[se.number,ep.number]})});H[i]={c,w,at:Date.parse(x.last_watched_at)||0}});
+  dr.forEach(x=>{const i=x.show&&x.show.ids&&x.show.ids.imdb;if(i)R.add(i)});
+  const m={},ts=Date.now();let nm=0,ns=0;
+  for(const k in S.titles){const t=S.titles[k];if(!t||!t.imdb)continue;
+   if(t.kind==='tv'){const e=H[t.imdb],c=e?e.c:0,tot=t.ep||0,k2=!c?'':(tot>0&&c>=tot?'w':'p');if(c)ns++;m[k]={tk:k2,watched:k2==='w',wat:e?e.at:0,wu:e&&e.w,dr:k2==='p'&&R.has(t.imdb)?1:0,ts}}
+   else{const a=M[t.imdb];if(a)nm++;m[k]={tk:a?'w':'',watched:!!a,wat:a||0,ts}}}
+  LS('tov',{m});LS('tlast',ts);D=mk(S);if(!silent&&!/settings/.test(location.hash))route(true);else if(silent&&!/settings|title/.test(location.hash))route(true);
+  if(!silent)toast('Trakt refreshed: '+nm+' movies, '+ns+' shows.');return true}catch(e){if(!silent)toast(trkNet(e));return false}finally{trkBusy=0}}
+const trkSoon=()=>{clearTimeout(trkT);trkT=setTimeout(()=>trkRefresh(true),4000)};
+function trkBody(t,x){const ids={imdb:t.imdb};if(t.kind!=='tv')return{movies:[{ids}]};if(x.scope==='all')return{shows:[{ids}]};if(x.scope==='season')return{shows:[{ids,seasons:[{number:x.season}]}]};const g={};(x.eps||[]).forEach(p=>{(g[p[0]]=g[p[0]]||[]).push({number:p[1]})});return{shows:[{ids,seasons:Object.keys(g).map(n=>({number:+n,episodes:g[n]}))}]}}
+async function doTrakt(id,t,x){const del=x.mode==='del';
+ if(trkOK()&&t.imdb){try{const r=await trkReq(del?'/sync/history/remove':'/sync/history',{m:'POST',b:trkBody(t,x)}),j=await r.json(),nf=j.not_found||{};if(['movies','shows','seasons','episodes'].some(q=>(nf[q]||[]).length)&&!['added','deleted'].some(q=>Object.values(j[q]||{}).some(n=>n>0)))throw TE('Trakt could not find this title or episode.');
+   const op={o:'trakt',key:id,imdb:t.imdb,mode:x.mode,scope:x.scope,spec:x.spec};applyOp(D,Object.assign({},x,op));
+   if(t.kind==='tv'&&x.scope==='eps'&&!del&&x.eps&&x.eps.length){const l=x.eps[x.eps.length-1];if(!t.wu||l[0]>t.wu[0]||(l[0]===t.wu[0]&&l[1]>t.wu[1]))t.wu=l}
+   const ov=LS('tov')||{m:{}};ov.m[id]={tk:t.tk||'',watched:!!t.watched,wat:t.wat||0,wu:t.wu||null,dr:t.dr?1:0,ts:Date.now()};LS('tov',ov);trkSoon();toast((del?'Removed from':'Marked on')+' Trakt.');return true}
+  catch(e){if(!(e instanceof TypeError)||!ghOK()){toast(trkNet(e));return false}}}
+ if(!ghOK()){toast('Add the GitHub repo and token in Settings first.');return false}
  const op=Object.assign({id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),o:'trakt',t:Date.now(),key:id,imdb:t.imdb},x);
- applyOp(D,op);const P=LS('ops')||[];P.push(op);LS('ops',P);flush(true);toast((x.mode==='del'?'Removed':'Marked')+' here. The laptop updates Trakt on its next Resync.');return true}
+ applyOp(D,op);const P=LS('ops')||[];P.push(op);LS('ops',P);flush(true);toast((del?'Removed':'Marked')+' here. The laptop updates Trakt on its next Resync.');return true}
 async function tmj(p){const bt=D.tm.length>50,r=await fetch('https://api.themoviedb.org/3'+p+(bt?'':(p.includes('?')?'&':'?')+'api_key='+encodeURIComponent(D.tm)),bt?{headers:{Authorization:'Bearer '+D.tm}}:{});return r.json()}
-function traktSheet(id,t){const tv=t.kind==='tv',on=t.tk!==undefined?!!t.tk:!!t.watched,ov=document.createElement('div');ov.className='sh';document.body.appendChild(ov);const close=()=>ov.remove(),done=x=>{if(doTrakt(id,t,x)){close();route(true)}};
+function traktSheet(id,t){const tv=t.kind==='tv',on=t.tk!==undefined?!!t.tk:!!t.watched,ov=document.createElement('div');ov.className='sh';document.body.appendChild(ov);const close=()=>ov.remove(),done=async x=>{if(await doTrakt(id,t,x)){close();route(true)}};
  if(!tv){ov.innerHTML=`<div class="sb"></div><div class="sp"><h4>${on?'Remove from watched':'Mark watched'} on Trakt</h4><div class="mu" style="margin-bottom:8px">${esc(t.title)}</div><button class="btn ${on?'dng':''}" id="go">${on?'Remove from watched':'Mark as watched'}</button></div>`;ov.querySelector('.sb').onclick=close;ov.querySelector('#go').onclick=()=>done({mode:on?'del':'add',scope:'all'});return}
  let mode='add',se=0,seasons=null,eps=null,sel=new Set(),tid=null,msg='';
  const del=()=>mode==='del',ask=w=>!del()||confirm('Remove '+w+' from watched on Trakt?');
@@ -298,5 +341,6 @@ function openAdd(){const L0=CL;if(!L0)return;const ov=document.createElement('di
 addEventListener('hashchange',()=>route());
 route();if(cfgOK())sync().then(r=>{if(r===true&&!/settings/.test(location.hash))route(true)});addEventListener('online',()=>flush());
 addEventListener('visibilitychange',()=>{if(!document.hidden)flush();if(!document.hidden&&cfgOK())sync().then(r=>{if(r===true&&!/settings|title/.test(location.hash))route(true)})});
+const trkStale=()=>trkOK()&&S&&Date.now()-(LS('tlast')||0)>216e5;setTimeout(()=>{if(trkStale())trkRefresh(true)},2500);addEventListener('visibilitychange',()=>{if(!document.hidden&&trkStale())trkRefresh(true)});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
