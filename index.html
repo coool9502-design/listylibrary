@@ -228,6 +228,7 @@ async function flush(notify){if(fl){fw=1;return}const c=LS('cfg')||{};if(!(LS('o
  if(res===true){if(notify&&!$('#ts.on button'))toast('Sent. The laptop applies it on its next Resync.');if(fw){fw=0;flush(notify)}}else{fw=0;if(notify)toast(res)}}
 function itemOf(k){const t=D.titles[k]||{};return{title:t.title||'',year:t.year||'',rating:t.rating?String(t.rating):'',genre:(t.gl||[]).join(', '),overview:t.overview||'',cover:t.poster||''}}
 function doEdit(o,l,key,item){if(!ghOK()){toast('Add the GitHub repo and token in Settings first.');return false}
+ if(o==='add'&&l.kind&&String(key).indexOf(l.kind==='tv'?'tv:':'movie:')!==0){toast(l.kind==='tv'?'Only TV shows can go in a TV list.':'Only movies can go in a movie list.');return false}
  if(!ELIG.test(key)){toast("This title has no TMDB id, so it can't be edited from the phone.");return false}
  const op={id:Date.now().toString(36)+Math.random().toString(36).slice(2,8),o,list:l.id,key,t:Date.now()};if(o==='add')op.item=item;
  applyOp(D,op);const P=LS('ops')||[];P.push(op);LS('ops',P);flush(true);return true}
@@ -328,15 +329,15 @@ function listOpts(){const L0=CL;if(!L0)return;let mode='';const ov=document.crea
 function tmRow(x){const tv=x.media_type==='tv',d=(tv?x.first_air_date:x.release_date)||'',ti=(tv?x.name:x.title)||'',y=+d.slice(0,4)||0,cv=x.poster_path?'https://image.tmdb.org/t/p/w342'+x.poster_path:'';
  return{key:(tv?'tv:':'movie:')+x.id,kind:tv?'tv':'movie',title:ti,year:y,cover:cv,item:{title:ti,year:y||'',rating:x.vote_average?x.vote_average.toFixed(1):'',genre:(x.genre_ids||[]).map(g=>GN[g]).filter(Boolean).slice(0,3).join(', '),overview:x.overview||'',cover:cv}}}
 function openAdd(){const L0=CL;if(!L0)return;const ov=document.createElement('div');ov.className='ao';
- ov.innerHTML=`<header><button class="ib" id="ax" aria-label="Close">${ic('x')}</button><input id="aq" placeholder="Add to ${esc(L0.name)}" autocomplete="off"></header><main id="ar"><div class="empty">Type a title to search TMDB.</div></main>`;document.body.appendChild(ov);
+ ov.innerHTML=`<header><button class="ib" id="ax" aria-label="Close">${ic('x')}</button><input id="aq" placeholder="Add ${L0.kind==='tv'?'show':'movie'} to ${esc(L0.name)}" autocomplete="off"></header><main id="ar"><div class="empty">Search TMDB for ${L0.kind==='tv'?'TV shows':'movies'}.</div></main>`;document.body.appendChild(ov);
  const inp=ov.querySelector('#aq'),res=ov.querySelector('#ar');let tm=0,seq=0,rows=[];
  const close=()=>{ov.remove();route(true)};ov.querySelector('#ax').onclick=close;
  const draw=()=>{const l=D.lists.find(x=>x.id===L0.id)||L0;res.innerHTML=rows.length?rows.map((r,i)=>`<div class="ar"><div class="at">${r.cover?`<img src="${esc(r.cover.replace('/w342/','/w92/'))}" alt="">`:''}</div><div class="ai"><b>${esc(r.title)}</b><small>${r.year||'—'} · ${r.kind==='tv'?'TV':'Film'}</small></div>${l.items.includes(r.key)?'<span class="ad">Added</span>':`<button class="chip on" data-i="${i}">Add</button>`}</div>`).join(''):'<div class="empty">No matches.</div>';
   res.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const r=rows[b.dataset.i];if(doEdit('add',l,r.key,r.item))draw()})};
- const go=async()=>{const s=inp.value.trim();if(s.length<2){res.innerHTML='<div class="empty">Type a title to search TMDB.</div>';return}
+ const go=async()=>{const s=inp.value.trim();if(s.length<2){res.innerHTML=`<div class="empty">Search TMDB for ${L0.kind==='tv'?'TV shows':'movies'}.</div>`;return}
   if(!D.tm){res.innerHTML='<div class="empty">The phone does not have the TMDB key yet. Run Resync on the laptop once, then open the app again.</div>';return}
   const n=++seq;res.innerHTML='<div class="empty">Searching…</div>';
-  try{const bt=D.tm.length>50,r=await fetch('https://api.themoviedb.org/3/search/multi?include_adult=false&query='+encodeURIComponent(s)+(bt?'':'&api_key='+encodeURIComponent(D.tm)),bt?{headers:{Authorization:'Bearer '+D.tm}}:{});if(n!==seq)return;if(!r.ok)throw 0;const j=await r.json();rows=(j.results||[]).filter(x=>x.media_type==='movie'||x.media_type==='tv').map(tmRow).sort((a,b)=>(b.kind===L0.kind)-(a.kind===L0.kind));draw()}catch(e){if(n===seq)res.innerHTML='<div class="empty">Search failed. Check the connection.</div>'}};
+  try{const ty=L0.kind==='tv'?'tv':'movie',bt=D.tm.length>50,r=await fetch('https://api.themoviedb.org/3/search/'+ty+'?include_adult=false&query='+encodeURIComponent(s)+(bt?'':'&api_key='+encodeURIComponent(D.tm)),bt?{headers:{Authorization:'Bearer '+D.tm}}:{});if(n!==seq)return;if(!r.ok)throw 0;const j=await r.json();rows=(j.results||[]).map(x=>tmRow(Object.assign({},x,{media_type:ty}))).filter(r=>r.kind===ty);draw()}catch(e){if(n===seq)res.innerHTML='<div class="empty">Search failed. Check the connection.</div>'}};
  inp.oninput=()=>{clearTimeout(tm);tm=setTimeout(go,350)};inp.focus()}
 addEventListener('hashchange',()=>route());
 route();if(cfgOK())sync().then(r=>{if(r===true&&!/settings/.test(location.hash))route(true)});addEventListener('online',()=>flush());
